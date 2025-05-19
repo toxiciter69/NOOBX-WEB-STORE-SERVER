@@ -12,27 +12,54 @@ const PORT = process.env.PORT || 3000;
 app.use(express.static('public'));
 
 const MONGO_URI = 'mongodb+srv://toxiciter:Hasan5&7@toxiciter.9tkfu.mongodb.net/STORAGE?retryWrites=true&w=majority&appName=Toxiciter';
-mongoose.connect(MONGO_URI, { useNewUrlParser: true, useUnifiedTopology: true });
 
+mongoose.connect(MONGO_URI, { useNewUrlParser: true, useUnifiedTopology: true });
 const conn = mongoose.connection;
+
 let gridfsBucket;
 
-conn.once('open', () => {
-  gridfsBucket = new GridFSBucket(conn.db, { bucketName: 'uploads' });
-  console.log('MongoDB connected');
-});
-
-// Local temp folder for downloaded files
+// Create local temp and storage folders
 const tempDir = path.join(__dirname, 'temp');
+const localFolder = path.join(__dirname, 'File');
 if (!fs.existsSync(tempDir)) fs.mkdirSync(tempDir);
+if (!fs.existsSync(localFolder)) fs.mkdirSync(localFolder);
 
-// Multer config for local upload
+// Multer setup
 const upload = multer({ dest: tempDir });
 
+// MongoDB connection open
+conn.once('open', async () => {
+  gridfsBucket = new GridFSBucket(conn.db, { bucketName: 'uploads' });
+  console.log('MongoDB connected');
 
-// ==================
-// Upload from Device
-// ==================
+  // Download all GridFS files to local "File" folder
+  const files = await gridfsBucket.find().toArray();
+
+  for (const file of files) {
+    const filePath = path.join(localFolder, file.filename);
+
+    // Skip if already exists
+    if (fs.existsSync(filePath)) continue;
+
+    const downloadStream = gridfsBucket.openDownloadStreamByName(file.filename);
+    const writeStream = fs.createWriteStream(filePath);
+
+    downloadStream.pipe(writeStream);
+
+    downloadStream.on('error', err => {
+      console.error(`Failed to download ${file.filename}:`, err);
+    });
+
+    writeStream.on('finish', () => {
+      console.log(`Saved locally: ${file.filename}`);
+    });
+  }
+});
+
+// Serve static files from "File" folder
+app.use('/media', express.static(localFolder));
+
+// Upload from device
 app.post('/upload/file', upload.single('media'), (req, res) => {
   if (!req.file) return res.status(400).json({ error: 'No file uploaded' });
 
@@ -52,9 +79,7 @@ app.post('/upload/file', upload.single('media'), (req, res) => {
     });
 });
 
-// ===================
 // Upload from URL
-// ===================
 app.get('/upload/url', async (req, res) => {
   const fileUrl = req.query.url;
   if (!fileUrl) return res.status(400).json({ error: 'No URL provided' });
@@ -78,10 +103,8 @@ app.get('/upload/url', async (req, res) => {
   }
 });
 
-// ==================
-// Serve Media
-// ==================
-app.get('/media/:filename', (req, res) => {
+// Serve media from GridFS
+/*app.get('/media/:filename', (req, res) => {
   gridfsBucket.find({ filename: req.params.filename }).toArray((err, files) => {
     if (!files || files.length === 0) {
       return res.status(404).json({ error: 'File not found' });
@@ -90,7 +113,7 @@ app.get('/media/:filename', (req, res) => {
     const downloadStream = gridfsBucket.openDownloadStreamByName(req.params.filename);
     downloadStream.pipe(res);
   });
-});
+});*/
 
 app.listen(PORT, () => {
   console.log(`Server running at http://localhost:${PORT}`);
