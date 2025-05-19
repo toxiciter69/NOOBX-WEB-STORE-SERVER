@@ -12,13 +12,12 @@ const PORT = process.env.PORT || 3000;
 app.use(express.static('public'));
 
 const MONGO_URI = 'mongodb+srv://toxiciter:Hasan5&7@toxiciter.9tkfu.mongodb.net/STORAGE?retryWrites=true&w=majority&appName=Toxiciter';
-
 mongoose.connect(MONGO_URI, { useNewUrlParser: true, useUnifiedTopology: true });
-const conn = mongoose.connection;
 
+const conn = mongoose.connection;
 let gridfsBucket;
 
-// Create local temp and storage folders
+// Local folders
 const tempDir = path.join(__dirname, 'temp');
 const localFolder = path.join(__dirname, 'File');
 if (!fs.existsSync(tempDir)) fs.mkdirSync(tempDir);
@@ -27,36 +26,37 @@ if (!fs.existsSync(localFolder)) fs.mkdirSync(localFolder);
 // Multer setup
 const upload = multer({ dest: tempDir });
 
-// MongoDB connection open
+// Save file from GridFS to local File folder
+function saveToLocal(filename) {
+  return new Promise((resolve, reject) => {
+    const filePath = path.join(localFolder, filename);
+    const downloadStream = gridfsBucket.openDownloadStreamByName(filename);
+    const writeStream = fs.createWriteStream(filePath);
+
+    downloadStream.pipe(writeStream);
+    downloadStream.on('error', reject);
+    writeStream.on('finish', () => {
+      console.log(`Saved locally: ${filename}`);
+      resolve();
+    });
+  });
+}
+
+// MongoDB connection
 conn.once('open', async () => {
   gridfsBucket = new GridFSBucket(conn.db, { bucketName: 'uploads' });
   console.log('MongoDB connected');
 
-  // Download all GridFS files to local "File" folder
   const files = await gridfsBucket.find().toArray();
 
   for (const file of files) {
     const filePath = path.join(localFolder, file.filename);
-
-    // Skip if already exists
     if (fs.existsSync(filePath)) continue;
-
-    const downloadStream = gridfsBucket.openDownloadStreamByName(file.filename);
-    const writeStream = fs.createWriteStream(filePath);
-
-    downloadStream.pipe(writeStream);
-
-    downloadStream.on('error', err => {
-      console.error(`Failed to download ${file.filename}:`, err);
-    });
-
-    writeStream.on('finish', () => {
-      console.log(`Saved locally: ${file.filename}`);
-    });
+    await saveToLocal(file.filename);
   }
 });
 
-// Serve static files from "File" folder
+// Serve static files
 app.use('/media', express.static(localFolder));
 
 // Upload from device
@@ -70,8 +70,9 @@ app.post('/upload/file', upload.single('media'), (req, res) => {
   const writeStream = gridfsBucket.openUploadStream(filename);
 
   readStream.pipe(writeStream)
-    .on('finish', () => {
+    .on('finish', async () => {
       fs.unlinkSync(req.file.path);
+      await saveToLocal(filename); // save to File/ after upload
       res.json({ message: 'Uploaded', url: `/media/${filename}` });
     })
     .on('error', () => {
@@ -92,7 +93,8 @@ app.get('/upload/url', async (req, res) => {
     const uploadStream = gridfsBucket.openUploadStream(filename);
 
     response.data.pipe(uploadStream)
-      .on('finish', () => {
+      .on('finish', async () => {
+        await saveToLocal(filename); // save to File/ after upload
         res.json({ message: 'Uploaded', url: `/media/${filename}` });
       })
       .on('error', () => {
@@ -103,7 +105,7 @@ app.get('/upload/url', async (req, res) => {
   }
 });
 
-// Serve media from GridFS
+// Serve from GridFS directly
 /*app.get('/media/:filename', (req, res) => {
   gridfsBucket.find({ filename: req.params.filename }).toArray((err, files) => {
     if (!files || files.length === 0) {
