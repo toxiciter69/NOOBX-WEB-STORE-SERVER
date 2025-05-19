@@ -9,6 +9,7 @@ const crypto = require('crypto');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+app.use(express.static('public'));
 
 const MONGO_URI = 'mongodb+srv://toxiciter:Hasan5&7@toxiciter.9tkfu.mongodb.net/STORAGE?retryWrites=true&w=majority&appName=Toxiciter';
 mongoose.connect(MONGO_URI, { useNewUrlParser: true, useUnifiedTopology: true });
