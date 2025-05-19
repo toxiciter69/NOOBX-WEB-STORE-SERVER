@@ -1,0 +1,90 @@
+<!DOCTYPE html><html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Media Uploader - Creator ♡︎ 𝐻𝐴𝑆𝐴𝑁 ♡︎</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 600px;
+      margin: auto;
+      padding: 20px;
+    }
+    h2 {
+      text-align: center;
+    }
+    form, .url-upload {
+      margin: 20px 0;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    input[type="file"], input[type="text"] {
+      padding: 8px;
+    }
+    button {
+      padding: 10px;
+      cursor: pointer;
+      background: #4CAF50;
+      color: white;
+      border: none;
+      font-size: 16px;
+    }
+    .result {
+      margin-top: 20px;
+      padding: 10px;
+      background: #f0f0f0;
+    }
+  </style>
+</head>
+<body>
+  <h2>Media Upload Portal</h2>  <!-- Upload Local File -->  <form id="uploadForm">
+    <label>Select file to upload:</label>
+    <input type="file" name="media" id="media" required />
+    <button type="submit">Upload File</button>
+  </form>  <!-- Upload via URL -->  <div class="url-upload">
+    <label>Upload file from URL:</label>
+    <input type="text" id="fileUrl" placeholder="https://example.com/file.jpg" />
+    <button onclick="uploadFromUrl()">Upload from URL</button>
+  </div>  <div class="result" id="result"></div>  <script>
+    const result = document.getElementById("result");
+
+    document.getElementById("uploadForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const formData = new FormData();
+      formData.append("media", document.getElementById("media").files[0]);
+
+      try {
+        const res = await fetch("/upload/file", {
+          method: "POST",
+          body: formData,
+        });
+        const data = await res.json();
+        if (data.url) {
+          result.innerHTML = `<strong>File URL:</strong> <a href="${data.url}" target="_blank">${data.url}</a>`;
+        } else {
+          result.innerHTML = `<span style='color:red'>${data.error || "Upload failed"}</span>`;
+        }
+      } catch (err) {
+        result.innerHTML = `<span style='color:red'>Error: ${err.message}</span>`;
+      }
+    });
+
+    async function uploadFromUrl() {
+      const url = document.getElementById("fileUrl").value;
+      if (!url) return alert("Please enter a URL");
+
+      try {
+        const res = await fetch(`/upload/url?url=${encodeURIComponent(url)}`);
+        const data = await res.json();
+        if (data.url) {
+          result.innerHTML = `<strong>File URL:</strong> <a href="${data.url}" target="_blank">${data.url}</a>`;
+        } else {
+          result.innerHTML = `<span style='color:red'>${data.error || "Upload failed"}</span>`;
+        }
+      } catch (err) {
+        result.innerHTML = `<span style='color:red'>Error: ${err.message}</span>`;
+      }
+    }
+  </script></body>
+  </html>
