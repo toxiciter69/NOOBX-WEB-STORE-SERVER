@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Media Uploader - Creator ♡︎ 𝐻𝐴𝑆𝐴𝑁 ♡︎</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 600px;
+      margin: auto;
+      padding: 20px;
+    }
+    h2, h3 {
+      text-align: center;
+    }
+    form, .url-upload {
+      margin: 20px 0;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    input[type="file"], input[type="text"] {
+      padding: 8px;
+    }
+    button {
+      padding: 10px;
+      cursor: pointer;
+      background: #4CAF50;
+      color: white;
+      border: none;
+      font-size: 16px;
+    }
+    .result, .preview {
+      margin-top: 20px;
+      padding: 10px;
+      background: #f0f0f0;
+    }
+    .item {
+      margin-bottom: 20px;
+      border-bottom: 1px solid #ccc;
+      padding-bottom: 10px;
+    }
+    img, video, audio {
+      max-width: 100%;
+      margin-top: 10px;
+      display: block;
+    }
+  </style>
+</head>
+<body>
+  <h2>Media Upload Portal</h2>
+
+  <!-- Upload Local File -->
+  <form id="uploadForm">
+    <label>Select file to upload:</label>
+    <input type="file" name="media" id="media" required />
+    <button type="submit">Upload File</button>
+  </form>
+
+  <!-- Upload via URL -->
+  <div class="url-upload">
+    <label>Upload file from URL:</label>
+    <input type="text" id="fileUrl" placeholder="https://example.com/file.jpg" />
+    <button onclick="uploadFromUrl()">Upload from URL</button>
+  </div>
+
+  <div class="result" id="result"></div>
+
+  <!-- Uploaded Files Section -->
+  <div class="preview">
+    <h3>Uploaded Files</h3>
+    <div id="fileList">Loading...</div>
+  </div>
+
+  <script>
+    const result = document.getElementById("result");
+
+    document.getElementById("uploadForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const formData = new FormData();
+      formData.append("media", document.getElementById("media").files[0]);
+
+      try {
+        const res = await fetch("/upload/file", {
+          method: "POST",
+          body: formData,
+        });
+        const data = await res.json();
+        if (data.url) {
+          result.innerHTML = `<strong>File URL:</strong> <a href="${data.url}" target="_blank">${data.url}</a>`;
+          fetchFiles(); // Refresh file list
+        } else {
+          result.innerHTML = `<span style='color:red'>${data.error || "Upload failed"}</span>`;
+        }
+      } catch (err) {
+        result.innerHTML = `<span style='color:red'>Error: ${err.message}</span>`;
+      }
+    });
+
+    async function uploadFromUrl() {
+      const url = document.getElementById("fileUrl").value;
+      if (!url) return alert("Please enter a URL");
+
+      try {
+        const res = await fetch(`/upload/url?url=${encodeURIComponent(url)}`);
+        const data = await res.json();
+        if (data.url) {
+          result.innerHTML = `<strong>File URL:</strong> <a href="${data.url}" target="_blank">${data.url}</a>`;
+          fetchFiles(); // Refresh file list
+        } else {
+          result.innerHTML = `<span style='color:red'>${data.error || "Upload failed"}</span>`;
+        }
+      } catch (err) {
+        result.innerHTML = `<span style='color:red'>Error: ${err.message}</span>`;
+      }
+    }
+
+    async function fetchFiles() {
+      try {
+        const res = await fetch('/list-files');
+        const files = await res.json();
+        const container = document.getElementById('fileList');
+        container.innerHTML = '';
+
+        files.forEach(file => {
+          const div = document.createElement('div');
+          div.className = 'item';
+
+          const url = file.filepath;
+          if (file.filetype === 'image') {
+            div.innerHTML = `<strong>${file.filename}</strong><img src="${url}">`;
+          } else if (file.filetype === 'video') {
+            div.innerHTML = `<strong>${file.filename}</strong><video controls src="${url}"></video>`;
+          } else if (file.filetype === 'audio') {
+            div.innerHTML = `<strong>${file.filename}</strong><audio controls src="${url}"></audio>`;
+          } else {
+            div.innerHTML = `<strong>${file.filename}</strong><a href="${url}" download>Download</a>`;
+          }
+
+          container.appendChild(div);
+        });
+      } catch (err) {
+        document.getElementById('fileList').innerText = 'Error loading files.';
+      }
+    }
+
+    // Load files on page load
+    fetchFiles();
+  </script>
+</body>
+</html>
