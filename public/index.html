@@ -7,7 +7,7 @@
   <style>
     body {
       font-family: Arial, sans-serif;
-      max-width: 600px;
+      max-width: 700px;
       margin: auto;
       padding: 20px;
     }
@@ -31,20 +31,24 @@
       border: none;
       font-size: 16px;
     }
-    .result, .preview {
+    .result {
       margin-top: 20px;
       padding: 10px;
       background: #f0f0f0;
     }
+    .preview {
+      margin-top: 30px;
+    }
     .item {
       margin-bottom: 20px;
-      border-bottom: 1px solid #ccc;
-      padding-bottom: 10px;
+      padding: 10px;
+      border: 1px solid #ddd;
     }
-    img, video, audio {
+    img, video {
       max-width: 100%;
-      margin-top: 10px;
+      height: auto;
       display: block;
+      margin-top: 10px;
     }
   </style>
 </head>
@@ -67,10 +71,10 @@
 
   <div class="result" id="result"></div>
 
-  <!-- Uploaded Files Section -->
+  <!-- Uploaded Files Preview -->
   <div class="preview">
     <h3>Uploaded Files</h3>
-    <div id="fileList">Loading...</div>
+    <div id="fileList"></div>
   </div>
 
   <script>
@@ -89,7 +93,7 @@
         const data = await res.json();
         if (data.url) {
           result.innerHTML = `<strong>File URL:</strong> <a href="${data.url}" target="_blank">${data.url}</a>`;
-          fetchFiles(); // Refresh file list
+          fetchFiles();
         } else {
           result.innerHTML = `<span style='color:red'>${data.error || "Upload failed"}</span>`;
         }
@@ -107,7 +111,7 @@
         const data = await res.json();
         if (data.url) {
           result.innerHTML = `<strong>File URL:</strong> <a href="${data.url}" target="_blank">${data.url}</a>`;
-          fetchFiles(); // Refresh file list
+          fetchFiles();
         } else {
           result.innerHTML = `<span style='color:red'>${data.error || "Upload failed"}</span>`;
         }
@@ -126,22 +130,22 @@
         files.forEach(file => {
           const div = document.createElement('div');
           div.className = 'item';
-
           const url = file.filepath;
+
           if (file.filetype === 'image') {
-            div.innerHTML = `<strong>${file.filename}</strong><img src="${url}">`;
+            div.innerHTML = `<strong>${file.filename}</strong><br><img src="${url}">`;
           } else if (file.filetype === 'video') {
-            div.innerHTML = `<strong>${file.filename}</strong><video controls src="${url}"></video>`;
+            div.innerHTML = `<strong>${file.filename}</strong><br><video controls src="${url}"></video>`;
           } else if (file.filetype === 'audio') {
-            div.innerHTML = `<strong>${file.filename}</strong><audio controls src="${url}"></audio>`;
-          } else {
-            div.innerHTML = `<strong>${file.filename}</strong><a href="${url}" download>Download</a>`;
+            div.innerHTML = `<strong>${file.filename}</strong><br><audio controls src="${url}"></audio>`;
+          } else if (file.isDownloadable) {
+            div.innerHTML = `<strong>${file.filename}</strong><br><a href="${url}" download>Download</a>`;
           }
 
           container.appendChild(div);
         });
       } catch (err) {
-        document.getElementById('fileList').innerText = 'Error loading files.';
+        document.getElementById('fileList').innerHTML = `<span style='color:red'>Failed to load files</span>`;
       }
     }
 
