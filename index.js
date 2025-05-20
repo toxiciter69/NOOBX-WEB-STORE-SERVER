@@ -103,6 +103,31 @@ app.get('/upload/url', async (req, res) => {
   }
 });
 
+app.get('/list-files', async (req, res) => {
+  try {
+    const files = await conn.db.collection('uploads.files').find().sort({ uploadDate: -1 }).toArray();
+    const fileList = files.map(file => {
+      const filename = file.filename;
+      const mimeType = file.contentType || 'application/octet-stream';
+
+      let filetype = 'other';
+      if (mimeType.startsWith('image')) filetype = 'image';
+      else if (mimeType.startsWith('video')) filetype = 'video';
+      else if (mimeType.startsWith('audio')) filetype = 'audio';
+
+      return {
+        filename,
+        filetype,
+        filepath: `/media/${filename}`
+      };
+    });
+
+    res.json(fileList);
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to list files', details: err.message });
+  }
+});
+
 
 app.listen(PORT, () => {
   console.log(`Server running at http://localhost:${PORT}`);
