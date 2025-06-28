@@ -130,7 +130,7 @@
         files.forEach(file => {
           const div = document.createElement('div');
           div.className = 'item';
-          const url = file.filepath;
+          const url = file.url;
 
           if (file.filetype === 'image') {
             div.innerHTML = `<strong>${file.filename}</strong><br><img src="${url}">`;
