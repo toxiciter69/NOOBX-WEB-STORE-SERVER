@@ -6,10 +6,12 @@ const fs = require('fs');
 const path = require('path');
 const axios = require('axios');
 const crypto = require('crypto');
+const cors = require("cors");
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 app.use(express.static('public'));
+app.use(cors());
 
 const MONGO_URI = 'mongodb+srv://toxiciter:Hasan5&7@toxiciter.9tkfu.mongodb.net/STORAGE?retryWrites=true&w=majority&appName=Toxiciter';
 mongoose.connect(MONGO_URI, { useNewUrlParser: true, useUnifiedTopology: true });
@@ -144,7 +146,7 @@ app.get('/list-files', async (req, res) => {
       return {
         filename,
         filetype,
-        filepath: `/media/${filename}`,
+        url: `https://store.noobx-api.rf.gd/media/${filename}`,
         isDownloadable: !(mimeType.startsWith('image') || mimeType.startsWith('video') || mimeType.startsWith('audio'))
       };
     });
