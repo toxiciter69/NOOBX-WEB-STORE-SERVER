@@ -89,7 +89,12 @@ app.get('/upload/url', async (req, res) => {
     const ext = path.extname(fileUrl.split('?')[0]) || '.bin';
     const filename = "hasan_" + crypto.randomBytes(4).toString('hex') + ext;
 
-    const response = await axios.get(fileUrl, { responseType: 'stream' });
+    const response = await axios.get(fileUrl, { 
+      responseType: 'stream', 
+      headers: {
+      "user-agent": "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Mobile Safari/537.36"
+      } 
+    });
     const uploadStream = gridfsBucket.openUploadStream(filename);
 
     response.data.pipe(uploadStream)
