@@ -161,7 +161,7 @@ app.get('/list-files', async (req, res) => {
     res.status(500).json({ error: 'Failed to list files', details: err.message });
   }
 });
-
+ console.log(process.env);
 
 app.listen(PORT, () => {
   console.log(`Server running at http://localhost:${PORT}`);
