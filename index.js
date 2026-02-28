@@ -10,6 +10,8 @@ const cors = require("cors");
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+const server = process.env.PUBLIC_URl || "https://uploader.koyeb.app";
+
 app.use(express.static('public'));
 app.use(cors());
 
@@ -60,7 +62,7 @@ conn.once('open', async () => {
 app.use('/media', express.static(localFolder));
 
 
-app.post('/upload/file', upload.single('media'), (req, res) => {
+app.post('/upload-file', upload.single('media'), (req, res) => {
   if (!req.file) return res.status(400).json({ error: 'No file uploaded' });
 
   const ext = path.extname(req.file.originalname);
@@ -73,7 +75,7 @@ app.post('/upload/file', upload.single('media'), (req, res) => {
     .on('finish', async () => {
       fs.unlinkSync(req.file.path);
       await saveToLocal(filename);
-      res.json({ status: "success", response: 'file upload successful', url: `https://store.noobx-api.rf.gd/media/${filename}`, author: "♡︎ 𝐻𝐴𝑆𝐴𝑁 ♡︎" });
+      res.json({ status: "success", response: 'file upload successfully', url: `${server}/media/${filename}`, author: "♡︎ 𝐻𝐴𝑆𝐴𝑁 ♡︎" });
     })
     .on('error', () => {
       res.status(500).json({ status: "error", response: 'Upload failed', author: "♡︎ 𝐻𝐴𝑆𝐴𝑁 ♡︎" });
@@ -81,7 +83,7 @@ app.post('/upload/file', upload.single('media'), (req, res) => {
 });
 
 
-app.get('/upload/url', async (req, res) => {
+app.get('/upload-url', async (req, res) => {
   const fileUrl = req.query.url;
   if (!fileUrl) return res.status(400).json({ error: 'No URL provided' });
 
@@ -100,7 +102,7 @@ app.get('/upload/url', async (req, res) => {
     response.data.pipe(uploadStream)
       .on('finish', async () => {
         await saveToLocal(filename);
-        res.json({ status: "success", response: 'file uploaded successful', url: `https://store.noobx-api.rf.gd/media/${filename}`, author: "♡︎ 𝐻𝐴𝑆𝐴𝑁 ♡︎" });
+        res.json({ status: "success", response: 'file uploaded successfully', url: `${server}/media/${filename}`, author: "♡︎ 𝐻𝐴𝑆𝐴𝑁 ♡︎" });
       })
       .on('error', () => {
         res.status(500).json({ status: "error", response: 'file upload failed', author: "♡︎ 𝐻𝐴𝑆𝐴𝑁 ♡︎" });
@@ -110,32 +112,7 @@ app.get('/upload/url', async (req, res) => {
   }
 });
 
-/*app.get('/list-files', async (req, res) => {
-  try {
-    const files = await conn.db.collection('uploads.files').find().sort({ uploadDate: -1 }).toArray();
-    const fileList = files.map(file => {
-      const filename = file.filename;
-      const mimeType = file.contentType || 'application/octet-stream';
-
-      let filetype = 'other';
-      if (mimeType.startsWith('image')) filetype = 'image';
-      else if (mimeType.startsWith('video')) filetype = 'video';
-      else if (mimeType.startsWith('audio')) filetype = 'audio';
-
-      return {
-        filename,
-        filetype,
-        filepath: `/media/${filename}`
-      };
-    });
-
-    res.json(fileList);
-  } catch (err) {
-    res.status(500).json({ error: 'Failed to list files', details: err.message });
-  }
-});*/
-
-app.get('/list-files', async (req, res) => {
+app.get('/files', async (req, res) => {
   try {
     const files = await conn.db.collection('uploads.files').find().sort({ uploadDate: -1 }).toArray();
 
@@ -151,7 +128,7 @@ app.get('/list-files', async (req, res) => {
       return {
         filename,
         filetype,
-        url: `https://store.noobx-api.rf.gd/media/${filename}`,
+        url: `${server}/media/${filename}`,
         isDownloadable: !(mimeType.startsWith('image') || mimeType.startsWith('video') || mimeType.startsWith('audio'))
       };
     });
