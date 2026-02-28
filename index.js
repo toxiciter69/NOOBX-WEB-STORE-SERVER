@@ -10,7 +10,7 @@ const cors = require("cors");
 
 const app = express();
 const PORT = process.env.PORT || 3000;
-const server = process.env.PUBLIC_URl || "https://uploader.koyeb.app";
+const server = "https://" + process.env.KOYEB_PUBLIC_DOMAIN || "https://noobs-uploader.koyeb.app";
 
 app.use(express.static('public'));
 app.use(cors());
