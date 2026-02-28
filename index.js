@@ -141,7 +141,7 @@ app.get('/upload-url', async (req, res) => {
   if (!url) return res.status(400).json({ error: 'No URL provided' });
 
   try {
-    const ext = path.extname(new URL(url).pathname) || '.bin';
+    const ext = path.extname(new URL(url).pathname) || url.split("/").pop() || '.bin';
     const filename = `hasan_${crypto.randomBytes(6).toString('hex')}${ext}`;
 
     const response = await axios.get(url, {
