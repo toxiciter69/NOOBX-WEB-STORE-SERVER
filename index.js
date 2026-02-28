@@ -209,6 +209,25 @@ app.get('/files', async (req, res) => {
   }
 });
 
+
+app.get("/delete", async (req, res) => {
+  const filename = req.query.filename;
+  if(!filename) {
+    return res.json({
+      status: "error",
+      response: "filename missing..!",
+      author: "♡︎ 𝐻𝐴𝑆𝐴𝑁 ♡"
+    });
+  }
+  await deleteFileByName(filename);
+  return res.json({
+    status: "success",
+    response: `Successfully deleted the file: ${filename}`,
+    author: "♡︎ 𝐻𝐴𝑆𝐴𝑁 ♡"
+  });
+});
+
+
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT} | Domain: ${server}`);
 });
